@@ -4,8 +4,11 @@ function print_debug(text)
   end
 end
 
-function print_centered(text)
-  love.graphics.printf(text, 0, (win_size/2)-(font_size), win_size, 'center')
+function print_centered(text, y_offset)
+  if not y_offset then
+    y_offset = -1 * font_size
+  end
+  love.graphics.printf(text, 0, (win_size/2)+y_offset, win_size, 'center')
 end
 
 function game_won()
@@ -31,7 +34,6 @@ function wx(word, solved, check)
   end
   local delim = check and "" or " "
   word = table.concat(w, delim)
-
   return word
 end
 
@@ -50,8 +52,8 @@ function love.load()
   font_size = 40
   imgw = 75
   imgh = 75
-  btnw = 20
-  btnh = 35
+  btnw = 40
+  btnh = 50
   btnm = 2
 
   WORD = "HANGMANASDFG"
@@ -62,11 +64,18 @@ function love.load()
   TRIES = 0
   MAX_TRIES = 11
 
-  win_size = (string.len(ALPHA)*btnw) + ((string.len(ALPHA)-1)*btnm)
+  COLOR_BG = {50, 50, 50, 255}
+  COLOR_BTN = {100, 100, 100, 255}
+  COLOR_TXT = {30, 30, 30, 255}
+  COLOR_SOLVED = {150, 200, 150, 255}
+
+  local button_rows = 2
+  local len = string.len(ALPHA)/button_rows
+  win_size = (len*btnw) + (len-1)*btnm
   local win_flags = {resizable = false}
   local font = love.graphics.newFont("assets/ConsolaMono.ttf", font_size)
   love.graphics.setFont(font)
-  love.graphics.setBackgroundColor(50, 50, 50)
+  love.graphics.setBackgroundColor(COLOR_BG)
   love.window.setMode(win_size, win_size, win_flags)
 
   main_img = {}
@@ -81,17 +90,21 @@ function love.load()
   main_pos_y = 100
 
   buttons = {}
-  local x, y, x2, y2
-  for i = 1, string.len(ALPHA), 1 do
-    x = ((i-1)*btnw) + (i-1)*btnm
-    y = (win_size - btnh)
-    buttons[i] = {
-      value = string.upper(string.sub(ALPHA, i, i)),
-      x = x,
-      y = y,
-      x2 = x+btnw,
-      y2 = y+btnh,
-    }
+  local x, y, x2, y2, i, j, idx
+
+  for i = 1, len, 1 do
+    for j = 1, button_rows, 1 do
+      idx = i + (j-1)*len
+      x = ((i-1)*btnw) + (i-1)*btnm
+      y = (win_size - (-j * (btnh+btnm)) - (3*btnh+btnm))
+      buttons[idx] = {
+        value = string.upper(string.sub(ALPHA, idx, idx)),
+        x = x,
+        y = y,
+        x2 = x+btnw,
+        y2 = y+btnh,
+      }
+    end
   end
 end
 
@@ -99,16 +112,23 @@ function love.draw()
   if game_lost() then
     print_centered("You lost!")
   elseif game_won() then
-    print_centered("You won!")
+    local percent = ((MAX_TRIES - TRIES) / MAX_TRIES) * 100
+    print_centered("You won! Score: " .. string.format("%.0f", percent) .."%")
   else
     love.graphics.draw(main_img[TRIES+1], main_pos_x, main_pos_y)
-    print_centered(wx(WORD, CORRECT))
+    print_centered(wx(WORD, CORRECT), 2*font_size)
 
     local r, g, b, a, v
     r, g, b, a = love.graphics.getColor()
-    love.graphics.setColor(70, 50, 50)
     for _, v in pairs(buttons) do
+      if CORRECT[v["value"]] then
+        love.graphics.setColor(COLOR_SOLVED)
+      else
+        love.graphics.setColor(COLOR_BTN)
+      end
       love.graphics.rectangle("fill", v["x"], v["y"], btnw, btnh)
+      love.graphics.setColor(COLOR_TXT)
+      love.graphics.print(v["value"], v["x"]+6, v["y"]-3)
     end
     love.graphics.setColor(r, g, b, a)
   end

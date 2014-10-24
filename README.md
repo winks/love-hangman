@@ -4,6 +4,8 @@
 
 Written in in the awesome [löve2d](http://love2d.org).
 
+![screenshot](https://raw.githubusercontent.com/winks/love-hangman/master/screenshot.jpg)
+
 ## HowTo
 
   * *Linux*: `love .`

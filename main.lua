@@ -47,19 +47,54 @@ function add_solved(chr)
   end
 end
 
+--- Split a string using a pattern.
+-- @param str The string to search in
+-- @param pat The pattern to search with
+-- @see http://lua-users.org/wiki/SplitJoin
+function split(str, pat)
+  local t = {}  -- NOTE: use {n = 0} in Lua-5.0
+  local fpat = '(.-)' .. pat
+  local last_end = 1
+  local s, e, cap = str:find(fpat, 1)
+  while s do
+    if s ~= 1 or cap ~= '' then
+      t[#t+1] = cap
+    end
+    last_end = e+1
+    s, e, cap = str:find(fpat, last_end)
+  end
+  if last_end <= #str then
+    cap = str:sub(last_end)
+    t[#t+1] = cap
+  end
+  return t
+end
+
 function love.load()
   DEBUG = false
   font_size = 40
-  imgw = 75
-  imgh = 75
+  imgw = 300
+  imgh = 300
   btnw = 40
   btnh = 50
   btnm = 2
+  local word_min_length = 3
 
-  WORD = "HANGMANASDFG"
+  ALPHA = "abcdefghijklmnopqrstuvwxyz"
   WORD_CHECK = ""
   CORRECT = {}
-  ALPHA = "abcdefghijklmnopqrstuvwxyz"
+
+  local rnd = love.math.random(1, string.len(ALPHA))
+  local chr = string.upper(string.sub(ALPHA, rnd, rnd))
+  local filename = "assets/eowl/" .. chr .. " Words.txt"
+  local words = love.filesystem.read(filename)
+  words = split(words, "\n")
+  WORD = ""
+
+  while string.len(WORD) < word_min_length do
+    rnd = love.math.random(1, #words)
+    WORD = string.upper(words[rnd]:gsub("^%s*(.-)%s*$", "%1"))
+  end
 
   TRIES = 0
   MAX_TRIES = 11
@@ -79,15 +114,14 @@ function love.load()
   love.window.setMode(win_size, win_size, win_flags)
 
   main_img = {}
-  main_img[1] = love.graphics.newImage("assets/back.jpg")
-  local i, filename
-  for i = 2, MAX_TRIES + 1, 1 do
+  local i
+  for i = 1, MAX_TRIES + 1, 1 do
     filename = i < 11 and "0" .. (i-1) or (i-1)
     main_img[i] = love.graphics.newImage("assets/" .. filename .. ".jpg")
   end
   
   main_pos_x = (win_size/2) - (imgw/2)
-  main_pos_y = 100
+  main_pos_y = 30
 
   buttons = {}
   local x, y, x2, y2, i, j, idx
@@ -110,10 +144,10 @@ end
 
 function love.draw()
   if game_lost() then
-    print_centered("You lost!")
+    print_centered("You lost!\n The word was:\n" .. WORD)
   elseif game_won() then
     local percent = ((MAX_TRIES - TRIES) / MAX_TRIES) * 100
-    print_centered("You won! Score: " .. string.format("%.0f", percent) .."%")
+    print_centered("You won!\n Score: " .. string.format("%.0f", percent) .."%")
   else
     love.graphics.draw(main_img[TRIES+1], main_pos_x, main_pos_y)
     print_centered(wx(WORD, CORRECT), 2*font_size)

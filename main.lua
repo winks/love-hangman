@@ -169,7 +169,7 @@ function love.draw()
 end
 
 function love.mousepressed(x, y, button)
-  if button == "l" then
+  if button == 1 then
     local v
     for _, v in pairs(buttons) do
       if x >= v["x"] and x <= v["x2"] and y >= v["y"] and y <= v["y2"] then
